@@ -5,15 +5,23 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 @Component
@@ -67,16 +75,42 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
         telegramClient.execute(message);
     }
 
+
     private void sendImage(Long chatId) {
-        sendMessage(chatId, "Присылаю картинку");
+        sendMessage(chatId, "Запустили загрузку картинки...");
+        new Thread(() -> {
+            var imageUrl = "https://picsum.photos/200";
+            try {
+                URL url = new URL(imageUrl);
+                var inputStream = url.openStream();
+
+                SendPhoto sendPhoto = SendPhoto.builder()
+                        .chatId(chatId)
+                        .photo(new InputFile(inputStream, "random.jpg"))
+                        .caption("Ваша случайная картинка готова.")
+                        .build();
+                telegramClient.execute(sendPhoto);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (TelegramApiException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
     }
 
     private void sendMyName(Long chatId, User user) {
-        sendMessage(chatId, "Присылаю имя");
+        sendMessage(chatId,
+        "Привет!\n\nВас зовут: %s\nВаш ник: @%s"
+                .formatted(
+                        user.getFirstName() + " " + Objects.requireNonNullElse(user.getLastName(), ""),
+                        user.getUserName()
+                        ) );
     }
 
     private void sendRandom(Long chatId) {
-        sendMessage(chatId, "Рандомное число");
+        sendMessage(chatId, String.valueOf("Ваше рандомное число: " + ThreadLocalRandom.current().nextInt()).replace("-", ""));
     }
 
     @SneakyThrows
