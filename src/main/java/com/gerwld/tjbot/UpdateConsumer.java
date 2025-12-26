@@ -17,7 +17,6 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
@@ -77,7 +76,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
 
     private void sendImage(Long chatId) {
-        sendMessage(chatId, "Запустили загрузку картинки...");
+        sendMessage(chatId, "Запуск долгого процесса, подождите...");
         new Thread(() -> {
             var imageUrl = "https://picsum.photos/200";
             try {
@@ -87,14 +86,10 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
                 SendPhoto sendPhoto = SendPhoto.builder()
                         .chatId(chatId)
                         .photo(new InputFile(inputStream, "random.jpg"))
-                        .caption("Ваша случайная картинка готова.")
+                        .caption("Долгий процесс завершен!")
                         .build();
                 telegramClient.execute(sendPhoto);
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } catch (TelegramApiException e) {
+            } catch (TelegramApiException | IOException e) {
                 throw new RuntimeException(e);
             }
         }).start();
@@ -110,7 +105,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
     }
 
     private void sendRandom(Long chatId) {
-        sendMessage(chatId, String.valueOf("Ваше рандомное число: " + ThreadLocalRandom.current().nextInt()).replace("-", ""));
+        sendMessage(chatId, ("Ваше рандомное число: " + ThreadLocalRandom.current().nextInt()).replace("-", ""));
     }
 
     @SneakyThrows
